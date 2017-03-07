@@ -9,29 +9,49 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
 BTN_MAP = {
-    Gdk.KEY_Right: uinput.BTN_DPAD_RIGHT,
-    Gdk.KEY_Up: uinput.BTN_DPAD_UP,
-    Gdk.KEY_Left: uinput.BTN_DPAD_LEFT,
-    Gdk.KEY_Down: uinput.BTN_DPAD_DOWN,
+    #Gdk.KEY_Right: uinput.BTN_DPAD_RIGHT,
+    #Gdk.KEY_Up: uinput.BTN_DPAD_UP,
+    #Gdk.KEY_Left: uinput.BTN_DPAD_LEFT,
+    #Gdk.KEY_Down: uinput.BTN_DPAD_DOWN,
 
-    Gdk.KEY_d: uinput.BTN_EAST,
-    Gdk.KEY_w: uinput.BTN_NORTH,
-    Gdk.KEY_a: uinput.BTN_WEST,
-    Gdk.KEY_s: uinput.BTN_SOUTH,
+    Gdk.KEY_d: uinput.BTN_C,
+    Gdk.KEY_w: uinput.BTN_Y,
+    Gdk.KEY_a: uinput.BTN_A,
+    Gdk.KEY_s: uinput.BTN_B,
 
-    Gdk.KEY_x: uinput.BTN_START,
-    Gdk.KEY_z: uinput.BTN_SELECT,
-    Gdk.KEY_q: uinput.BTN_TL,
-    Gdk.KEY_e: uinput.BTN_TR,
-    Gdk.KEY_1: uinput.BTN_TL2,
-    Gdk.KEY_3: uinput.BTN_TR2,
+    Gdk.KEY_3: uinput.BTN_SELECT,
+    Gdk.KEY_1: uinput.BTN_START,
+    Gdk.KEY_q: uinput.BTN_X,
+    Gdk.KEY_e: uinput.BTN_Z,
+
+    Gdk.KEY_c: uinput.BTN_DPAD_UP,
+    Gdk.KEY_v: uinput.BTN_DPAD_DOWN,
 }
 
-def key_acted(widget, event, device):
+AXIS_MAP = {
+    Gdk.KEY_Right: (uinput.ABS_X, 1),
+    Gdk.KEY_Up: (uinput.ABS_Y, -1),
+    Gdk.KEY_Left: (uinput.ABS_X, -1),
+    Gdk.KEY_Down: (uinput.ABS_Y, 1),
+}
+
+def key_acted(widget, event, data):
+    device, status = data
     pressed = event.type == Gdk.EventType.KEY_PRESS
+    control = event.keyval
     #print("Key {} was {}".format(event.keyval, "pressed" if pressed else "released"))
-    if event.keyval in BTN_MAP:
-        device.emit(BTN_MAP[event.keyval], 1 if pressed else 0)
+    if control in BTN_MAP:
+        device.emit(BTN_MAP[control], 1 if pressed else 0)
+    if control in AXIS_MAP:
+        axis, direction = AXIS_MAP[control]
+        status[control] = 1 if pressed else 0
+        axes = {}
+        for control2, (axis2, dir2) in AXIS_MAP.items():
+            if axis2 not in axes:
+                axes[axis2] = 0
+            axes[axis2] += dir2 if status[control2] else 0
+        for axis2, value in axes.items():
+            device.emit(axis2, value)
     return True
 
 # Based on http://unix.stackexchange.com/a/290606/31311
@@ -40,35 +60,13 @@ def key_acted(widget, event, device):
 # There does not appear to be much more docs available, although
 # docstrings may help a little bit...
 def main():
-    events = (
-        #uinput.BTN_JOYSTICK,
-
-        #uinput.ABS_X + (-128, 127, 0, 0),
-        #uinput.ABS_Y + (-128, 127, 0, 0),
-        #uinput.ABS_RX + (-128, 127, 0, 0),
-        #uinput.ABS_RY + (-128, 127, 0, 0),
-        #uinput.ABS_THROTTLE + (-128, 127, 0, 0),
-        #uinput.ABS_RUDDER + (-128, 127, 0, 0),
-        #uinput.ABS_WHEEL + (-128, 127, 0, 0),
-        #uinput.ABS_GAS + (-128, 127, 0, 0),
-
-        uinput.BTN_DPAD_RIGHT,
-        uinput.BTN_DPAD_UP,
-        uinput.BTN_DPAD_LEFT,
-        uinput.BTN_DPAD_DOWN,
-
-        uinput.BTN_EAST,
-        uinput.BTN_NORTH,
-        uinput.BTN_WEST,
-        uinput.BTN_SOUTH,
-
-        uinput.BTN_START,
-        uinput.BTN_SELECT,
-        uinput.BTN_TL,
-        uinput.BTN_TR,
-        uinput.BTN_TL2,
-        uinput.BTN_TR2,
-    )
+    events = []
+    status = {}
+    for btn in BTN_MAP.values():
+        events.append(btn)
+    for control, (axis, direction) in AXIS_MAP.items():
+        events.append(axis + (-1, 1, 0, 0))
+        status[control] = 0
     device = uinput.Device(events, 'virtjoy')
     #for event in events:
     #    device.emit(event, 0, syn=False)
@@ -80,8 +78,8 @@ def main():
 
     win = Gtk.Window()
     win.connect("delete-event", Gtk.main_quit)
-    win.connect("key-press-event", key_acted, device)
-    win.connect("key-release-event", key_acted, device)
+    win.connect("key-press-event", key_acted, (device, status))
+    win.connect("key-release-event", key_acted, (device, status))
     win.show_all()
 
     Gtk.main()
