@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import time
 import struct
 import uinput
+import socket
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
-
-EV_KEY = 0x01
-EV_ABS = 0x03
+from gi.repository import Gtk, Gdk, GLib
 
 VERSION = 0
+SEND_TIMEOUT = 100
 
 BTN_MAP = {
     #Gdk.KEY_Right: uinput.BTN_DPAD_RIGHT,
@@ -41,7 +41,8 @@ AXIS_MAP = {
     Gdk.KEY_Down: (uinput.ABS_Y, 1),
 }
 
-def key_acted(widget, event, status):
+def key_acted(widget, event, data):
+    status, conf = data
     pressed = event.type == Gdk.EventType.KEY_PRESS
     control = event.keyval
     #print("Key {} was {}".format(event.keyval, "pressed" if pressed else "released"))
@@ -49,7 +50,7 @@ def key_acted(widget, event, status):
         status[control] = 1 if pressed else 0
     if control in AXIS_MAP:
         status[control] = 1 if pressed else 0
-    print(repr(build_packet("Gio", build_emitted_status(status))))
+    send_packet(data)
     return True
 
 def build_emitted_status(status):
@@ -75,12 +76,25 @@ def build_packet(name, emitted):
         packet += struct.pack('!BHh', evtype, elem, value)
     return packet
 
+def send_packet(data):
+    status, conf = data
+    packet = build_packet(conf['name'], build_emitted_status(status))
+    #print(repr(packet))
+    conf['sock'].sendto(packet, (conf['ip'], conf['port']))
+    return True
+
 # Based on http://unix.stackexchange.com/a/290606/31311
 # See also http://thiemonge.org/getting-started-with-uinput
 # Events in /usr/include/linux/input-event-codes.h
 # There does not appear to be much more docs available, although
 # docstrings may help a little bit...
 def main():
+    conf = {}
+    conf['ip'] = sys.argv[1]
+    conf['port'] = int(sys.argv[2])
+    conf['name'] = sys.argv[3]
+    conf['sock'] = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
     events = []
     status = {}
     for control, btn in BTN_MAP.items():
@@ -90,10 +104,12 @@ def main():
         events.append(axis + (-1, 1, 0, 0))
         status[control] = 0
 
+    GLib.timeout_add(SEND_TIMEOUT, send_packet, (status, conf))
+
     win = Gtk.Window()
     win.connect("delete-event", Gtk.main_quit)
-    win.connect("key-press-event", key_acted, status)
-    win.connect("key-release-event", key_acted, status)
+    win.connect("key-press-event", key_acted, (status, conf))
+    win.connect("key-release-event", key_acted, (status, conf))
     win.show_all()
 
     Gtk.main()
