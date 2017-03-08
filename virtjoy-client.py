@@ -4,7 +4,7 @@
 import sys
 import time
 import struct
-import uinput
+import events
 import socket
 
 import gi
@@ -15,30 +15,30 @@ VERSION = 0
 SEND_TIMEOUT = 100
 
 BTN_MAP = {
-    #Gdk.KEY_Right: uinput.BTN_DPAD_RIGHT,
-    #Gdk.KEY_Up: uinput.BTN_DPAD_UP,
-    #Gdk.KEY_Left: uinput.BTN_DPAD_LEFT,
-    #Gdk.KEY_Down: uinput.BTN_DPAD_DOWN,
+    #Gdk.KEY_Right: events.BTN_DPAD_RIGHT,
+    #Gdk.KEY_Up: events.BTN_DPAD_UP,
+    #Gdk.KEY_Left: events.BTN_DPAD_LEFT,
+    #Gdk.KEY_Down: events.BTN_DPAD_DOWN,
 
-    Gdk.KEY_d: uinput.BTN_C,
-    Gdk.KEY_w: uinput.BTN_Y,
-    Gdk.KEY_a: uinput.BTN_A,
-    Gdk.KEY_s: uinput.BTN_B,
+    Gdk.KEY_d: events.BTN_C,
+    Gdk.KEY_w: events.BTN_Y,
+    Gdk.KEY_a: events.BTN_A,
+    Gdk.KEY_s: events.BTN_B,
 
-    Gdk.KEY_3: uinput.BTN_SELECT,
-    Gdk.KEY_1: uinput.BTN_START,
-    Gdk.KEY_q: uinput.BTN_X,
-    Gdk.KEY_e: uinput.BTN_Z,
+    Gdk.KEY_3: events.BTN_SELECT,
+    Gdk.KEY_1: events.BTN_START,
+    Gdk.KEY_q: events.BTN_X,
+    Gdk.KEY_e: events.BTN_Z,
 
-    Gdk.KEY_c: uinput.BTN_DPAD_UP,
-    Gdk.KEY_v: uinput.BTN_DPAD_DOWN,
+    Gdk.KEY_c: events.BTN_DPAD_UP,
+    Gdk.KEY_v: events.BTN_DPAD_DOWN,
 }
 
 AXIS_MAP = {
-    Gdk.KEY_Right: (uinput.ABS_X, 1),
-    Gdk.KEY_Up: (uinput.ABS_Y, -1),
-    Gdk.KEY_Left: (uinput.ABS_X, -1),
-    Gdk.KEY_Down: (uinput.ABS_Y, 1),
+    Gdk.KEY_Right: (events.ABS_X, 1),
+    Gdk.KEY_Up: (events.ABS_Y, -1),
+    Gdk.KEY_Left: (events.ABS_X, -1),
+    Gdk.KEY_Down: (events.ABS_Y, 1),
 }
 
 def key_acted(widget, event, data):
