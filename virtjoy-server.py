@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import uinput
 import time
+import select
+import socket
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk, GLib
+
+BUFSIZE = 2500
 
 BTN_MAP = {
     #Gdk.KEY_Right: uinput.BTN_DPAD_RIGHT,
@@ -35,39 +40,26 @@ AXIS_MAP = {
     Gdk.KEY_Down: (uinput.ABS_Y, 1),
 }
 
-def key_acted(widget, event, data):
-    device, status = data
-    pressed = event.type == Gdk.EventType.KEY_PRESS
-    control = event.keyval
-    #print("Key {} was {}".format(event.keyval, "pressed" if pressed else "released"))
-    if control in BTN_MAP:
-        device.emit(BTN_MAP[control], 1 if pressed else 0)
-    if control in AXIS_MAP:
-        axis, direction = AXIS_MAP[control]
-        status[control] = 1 if pressed else 0
-        axes = {}
-        for control2, (axis2, dir2) in AXIS_MAP.items():
-            if axis2 not in axes:
-                axes[axis2] = 0
-            axes[axis2] += dir2 if status[control2] else 0
-        for axis2, value in axes.items():
-            device.emit(axis2, value)
-    return True
-
-# Based on http://unix.stackexchange.com/a/290606/31311
+# uinput code is ased on http://unix.stackexchange.com/a/290606/31311
 # See also http://thiemonge.org/getting-started-with-uinput
 # Events in /usr/include/linux/input-event-codes.h
 # There does not appear to be much more docs available, although
 # docstrings may help a little bit...
 def main():
+    conf = {}
+    ip = sys.argv[1]
+    port = int(sys.argv[2])
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip, port))
+
     events = []
-    status = {}
     for btn in BTN_MAP.values():
         events.append(btn)
-    for control, (axis, direction) in AXIS_MAP.items():
+    for axis, direction in AXIS_MAP.values():
         events.append(axis + (-1, 1, 0, 0))
-        status[control] = 0
     device = uinput.Device(events, 'virtjoy')
+
     #for event in events:
     #    device.emit(event, 0, syn=False)
     #while True:
@@ -76,13 +68,9 @@ def main():
     #    device.emit(uinput.BTN_NORTH, 0)
     #    time.sleep(1.0)
 
-    win = Gtk.Window()
-    win.connect("delete-event", Gtk.main_quit)
-    win.connect("key-press-event", key_acted, (device, status))
-    win.connect("key-release-event", key_acted, (device, status))
-    win.show_all()
-
-    Gtk.main()
+    while True:
+        data, addr = sock.recvfrom(BUFSIZE)
+        print("received from {}: {}".format(data, addr))
 
 if __name__ == '__main__':
     main()

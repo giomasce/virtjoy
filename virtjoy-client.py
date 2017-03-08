@@ -83,11 +83,6 @@ def send_packet(data):
     conf['sock'].sendto(packet, (conf['ip'], conf['port']))
     return True
 
-# Based on http://unix.stackexchange.com/a/290606/31311
-# See also http://thiemonge.org/getting-started-with-uinput
-# Events in /usr/include/linux/input-event-codes.h
-# There does not appear to be much more docs available, although
-# docstrings may help a little bit...
 def main():
     conf = {}
     conf['ip'] = sys.argv[1]
