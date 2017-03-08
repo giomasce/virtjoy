@@ -14,12 +14,11 @@ from gi.repository import Gtk, Gdk, GLib
 VERSION = 0
 SEND_TIMEOUT = 100
 
+# For some reason keys are interpreted in funny ways by programs
+# consuming them; I am not really sure where the issue is, but in my
+# experient START and SELECT are L1 and R1, while DPAP_UP and
+# DPAD_DOWN and START and SELECT; the others appear to be correct
 BTN_MAP = {
-    #Gdk.KEY_Right: events.BTN_DPAD_RIGHT,
-    #Gdk.KEY_Up: events.BTN_DPAD_UP,
-    #Gdk.KEY_Left: events.BTN_DPAD_LEFT,
-    #Gdk.KEY_Down: events.BTN_DPAD_DOWN,
-
     Gdk.KEY_d: events.BTN_C,
     Gdk.KEY_w: events.BTN_Y,
     Gdk.KEY_a: events.BTN_A,
